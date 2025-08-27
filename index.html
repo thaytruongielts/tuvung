@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trắc nghiệm Kéo Thả</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .draggable {
+            cursor: grab;
+            user-select: none;
+            transition: all 0.2s ease-in-out;
+        }
+        .draggable:active {
+            cursor: grabbing;
+        }
+        .dropzone {
+            transition: all 0.2s ease-in-out;
+            border: 2px dashed #d1d5db;
+        }
+        .dropzone.drag-over {
+            border-color: #4f46e5;
+            background-color: #eef2ff;
+        }
+        .correct {
+            background-color: #d1fae5 !important;
+        }
+        .incorrect {
+            background-color: #fee2e2 !important;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div id="app" class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-4xl">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Trắc nghiệm Cụm từ Tiếng Anh</h1>
+        <p class="text-center text-gray-600 mb-8">Hãy kéo các đáp án vào ô trống để hoàn thành câu hỏi.</p>
+
+        <div id="quiz-container" class="space-y-8">
+            <!-- Câu hỏi sẽ được chèn vào đây bởi JavaScript -->
+        </div>
+
+        <div class="mt-8 flex justify-center space-x-4">
+            <button id="check-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-6 rounded-full shadow-lg transition transform hover:scale-105">
+                Kiểm Tra
+            </button>
+            <button id="reset-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-6 rounded-full shadow-lg transition transform hover:scale-105">
+                Làm Lại
+            </button>
+        </div>
+
+        <div id="result-container" class="mt-8 text-center text-lg font-semibold"></div>
+    </div>
+
+    <script>
+        // Dữ liệu câu hỏi về cụm từ tiếng Anh
+        const quizData = [
+            { question_number: 1, question: 'Studying abroad can ______ by exposing students to different cultures.', option_a: 'A. broaden horizons', option_b: 'B. sedentary lifestyle', option_c: 'C. renewable resources', option_d: 'D. economic downturn', correct_answer: 'A. broaden horizons', feedback: '"Broaden horizons" (mở rộng tầm nhìn) là cụm từ phù hợp nhất trong ngữ cảnh này.' },
+            { question_number: 2, question: 'A ______ is one of the main causes of obesity.', option_a: 'A. technological advancement', option_b: 'B. academic performance', option_c: 'C. sedentary lifestyle', option_d: 'D. preventive measure', correct_answer: 'C. sedentary lifestyle', feedback: '"Sedentary lifestyle" (lối sống ít vận động) là một nguyên nhân chính của béo phì.' },
+            { question_number: 3, question: 'Governments should invest more in ______.', option_a: 'A. academic performance', option_b: 'B. disposable income', option_c: 'C. renewable resources', option_d: 'D. economic downturn', correct_answer: 'C. renewable resources', feedback: '"Renewable resources" (tài nguyên tái tạo) là cụm từ phù hợp với ngữ cảnh đầu tư của chính phủ.' },
+            { question_number: 4, question: 'Poor attendance can harm students’ ______.', option_a: 'A. disposable income', option_b: 'B. academic performance', option_c: 'C. sedentary lifestyle', option_d: 'D. preventive measure', correct_answer: 'B. academic performance', feedback: '"Academic performance" (thành tích học tập) bị ảnh hưởng bởi việc nghỉ học.' },
+            { question_number: 5, question: 'People with higher ______ tend to spend more on luxury goods.', option_a: 'A. disposable income', option_b: 'B. academic performance', option_c: 'C. boost productivity', option_d: 'D. economic downturn', correct_answer: 'A. disposable income', feedback: '"Disposable income" (thu nhập khả dụng) là khoản tiền sau khi đã trừ thuế, dùng cho chi tiêu.' },
+            { question_number: 6, question: 'Automation can ______ in manufacturing.', option_a: 'A. conserve biodiversity', option_b: 'B. boost productivity', option_c: 'C. broaden horizons', option_d: 'D. take preventive measures', correct_answer: 'B. boost productivity', feedback: '"Boost productivity" (tăng năng suất) là cụm từ phù hợp với tự động hóa trong sản xuất.' },
+            { question_number: 7, question: 'Wearing masks is one of the ______ against Covid-19.', option_a: 'A. academic performances', option_b: 'B. sedentary lifestyles', option_c: 'C. preventive measures', option_d: 'D. economic downturns', correct_answer: 'C. preventive measures', feedback: '"Preventive measures" (biện pháp phòng ngừa) là cụm từ phù hợp.' },
+            { question_number: 8, question: 'Unemployment often rises in an ______.', option_a: 'A. economic downturn', option_b: 'B. sedentary lifestyle', option_c: 'C. academic performance', option_d: 'D. preventive measure', correct_answer: 'A. economic downturn', feedback: '"Economic downturn" (suy thoái kinh tế) thường đi kèm với tỷ lệ thất nghiệp gia tăng.' },
+            { question_number: 9, question: 'National parks are vital to ______.', option_a: 'A. economic downturn', option_b: 'B. conserve biodiversity', option_c: 'C. boost productivity', option_d: 'D. academic performance', correct_answer: 'B. conserve biodiversity', feedback: '"Conserve biodiversity" (bảo tồn đa dạng sinh học) là cụm từ phù hợp nhất với vườn quốc gia.' },
+            { question_number: 10, question: 'Recent ______ make online learning more effective.', option_a: 'A. economic downturns', option_b: 'B. sedentary lifestyles', option_c: 'C. renewable resources', option_d: 'D. technological advancements', correct_answer: 'D. technological advancements', feedback: '"Technological advancements" (tiến bộ công nghệ) làm cho việc học trực tuyến hiệu quả hơn.' }
+        ];
+
+        let draggedItem = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderQuiz();
+            setupEventListeners();
+        });
+
+        function renderQuiz() {
+            const quizContainer = document.getElementById('quiz-container');
+            quizContainer.innerHTML = '';
+            quizData.forEach(q => {
+                const questionElement = document.createElement('div');
+                questionElement.classList.add('p-6', 'bg-gray-50', 'rounded-xl', 'shadow-md', 'border', 'border-gray-200');
+
+                const questionText = document.createElement('p');
+                questionText.classList.add('text-lg', 'font-medium', 'text-gray-700', 'mb-4');
+                questionText.textContent = q.question_number + '. ' + q.question;
+                questionElement.appendChild(questionText);
+
+                const optionsContainer = document.createElement('div');
+                optionsContainer.classList.add('options-container', 'flex', 'flex-col', 'sm:flex-row', 'sm:flex-wrap', 'gap-4', 'justify-between');
+
+                const options = [q.option_a, q.option_b, q.option_c, q.option_d];
+                // Xáo trộn các đáp án để không bị cố định
+                options.sort(() => Math.random() - 0.5);
+
+                options.forEach(option => {
+                    const optionElement = document.createElement('div');
+                    optionElement.classList.add('draggable', 'p-3', 'bg-white', 'rounded-lg', 'shadow-sm', 'border', 'border-gray-200', 'flex-1', 'text-center', 'font-medium', 'text-gray-800');
+                    optionElement.textContent = option;
+                    optionElement.setAttribute('draggable', true);
+                    optionElement.dataset.value = option; // Lưu giá trị của đáp án
+                    optionsContainer.appendChild(optionElement);
+                });
+
+                const dropzone = document.createElement('div');
+                dropzone.classList.add('dropzone', 'p-6', 'bg-gray-100', 'rounded-lg', 'text-center', 'min-h-16', 'flex', 'items-center', 'justify-center', 'text-gray-500', 'mt-4');
+                dropzone.textContent = 'Kéo đáp án vào đây...';
+                dropzone.dataset.correctAnswer = q.correct_answer;
+                
+                questionElement.appendChild(optionsContainer);
+                questionElement.appendChild(dropzone);
+                quizContainer.appendChild(questionElement);
+            });
+        }
+
+        function setupEventListeners() {
+            const quizContainer = document.getElementById('quiz-container');
+
+            quizContainer.addEventListener('dragstart', (e) => {
+                if (e.target.classList.contains('draggable')) {
+                    draggedItem = e.target;
+                    e.target.classList.add('opacity-50');
+                }
+            });
+
+            quizContainer.addEventListener('dragend', (e) => {
+                if (e.target.classList.contains('draggable')) {
+                    e.target.classList.remove('opacity-50');
+                }
+            });
+
+            quizContainer.addEventListener('dragover', (e) => {
+                const dropzone = e.target.closest('.dropzone');
+                if (dropzone) {
+                    e.preventDefault();
+                    dropzone.classList.add('drag-over');
+                }
+            });
+
+            quizContainer.addEventListener('dragleave', (e) => {
+                const dropzone = e.target.closest('.dropzone');
+                if (dropzone) {
+                    dropzone.classList.remove('drag-over');
+                }
+            });
+
+            quizContainer.addEventListener('drop', (e) => {
+                e.preventDefault();
+                const dropzone = e.target.closest('.dropzone');
+                if (dropzone && draggedItem) {
+                    // Find the existing draggable item in the dropzone
+                    const existingItem = dropzone.querySelector('.draggable');
+                    
+                    if (existingItem) {
+                        // Move the old item back to its original container
+                        const originalContainer = existingItem.closest('.p-6').querySelector('.options-container');
+                        if (originalContainer) {
+                             originalContainer.appendChild(existingItem);
+                             existingItem.classList.remove('correct', 'incorrect');
+                        }
+                    }
+
+                    // Append the new item to the dropzone
+                    dropzone.innerHTML = ''; // Clear placeholder text
+                    dropzone.classList.remove('drag-over');
+                    dropzone.appendChild(draggedItem);
+                }
+            });
+
+            document.getElementById('check-btn').addEventListener('click', () => {
+                checkAnswers();
+            });
+
+            document.getElementById('reset-btn').addEventListener('click', () => {
+                resetQuiz();
+            });
+        }
+
+        function checkAnswers() {
+            const dropzones = document.querySelectorAll('.dropzone');
+            let correctCount = 0;
+
+            dropzones.forEach((dropzone, index) => {
+                // Remove old feedback before checking
+                const oldFeedback = dropzone.querySelector('.feedback');
+                if (oldFeedback) oldFeedback.remove();
+                
+                const droppedItem = dropzone.querySelector('.draggable');
+                const correctAnswer = dropzone.dataset.correctAnswer;
+                
+                const feedbackDiv = document.createElement('p');
+                feedbackDiv.classList.add('text-sm', 'mt-2', 'font-normal');
+
+                if (droppedItem && droppedItem.dataset.value === correctAnswer) {
+                    dropzone.classList.add('correct');
+                    dropzone.classList.remove('incorrect');
+                    droppedItem.classList.add('correct');
+                    droppedItem.classList.remove('incorrect');
+                    feedbackDiv.classList.add('text-green-700', 'feedback');
+                    feedbackDiv.textContent = 'Đúng rồi!';
+                    correctCount++;
+                } else {
+                    dropzone.classList.add('incorrect');
+                    dropzone.classList.remove('correct');
+                    if (droppedItem) {
+                        droppedItem.classList.add('incorrect');
+                        droppedItem.classList.remove('correct');
+                    }
+                    feedbackDiv.classList.add('text-red-700', 'feedback');
+                    feedbackDiv.textContent = `Sai. Đáp án đúng là: ${correctAnswer}.`;
+                }
+                
+                // Add the explanation feedback
+                const feedbackText = quizData[index].feedback;
+                const explainFeedback = document.createElement('p');
+                explainFeedback.classList.add('text-sm', 'mt-1', 'text-gray-500', 'feedback');
+                explainFeedback.textContent = feedbackText;
+
+                dropzone.appendChild(feedbackDiv);
+                dropzone.appendChild(explainFeedback);
+            });
+
+            const resultContainer = document.getElementById('result-container');
+            resultContainer.textContent = `Bạn đã trả lời đúng ${correctCount} / ${quizData.length} câu.`;
+            resultContainer.classList.remove('text-green-600', 'text-red-600');
+            if (correctCount === quizData.length) {
+                resultContainer.classList.add('text-green-600');
+            } else {
+                resultContainer.classList.add('text-red-600');
+            }
+        }
+
+        function resetQuiz() {
+            const quizContainer = document.getElementById('quiz-container');
+            quizContainer.innerHTML = '';
+            document.getElementById('result-container').textContent = '';
+            renderQuiz();
+        }
+    </script>
+</body>
+</html>
